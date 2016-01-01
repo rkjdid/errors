@@ -1,22 +1,30 @@
-// Package errors provides errors that have stack-traces.
+// Package errors provides a list of errors that have stack-traces, and formattable errors that can be compared.
 //
 // This is particularly useful when you want to understand the
 // state of execution when an error was returned unexpectedly.
 //
-// It provides the type *Error which implements the standard
+// It provides the type *Errors which implements the standard
 // golang error interface, so you can use this library interchangably
 // with code that is expecting a normal error return.
+//
+// It also provides two extra types: *Errf and *Errors. I wanted to be able to have comparable, more helpful errors
+// so *Errf is a closure for Errorf that stores an error type, so each time an error made with Newf is called, it will
+// return an error that compares as true to the original Errf, while adding extra information to the error message.
+// I also wanted to be able to chain errors together for the case when an error is not fatal for a function,
+// but I still want to store it which is what the *Errors type does.
+//
+// The Error() function of the *Errors type displays the StackTrace by default.
 //
 // For example:
 //
 //  package crashy
 //
-//  import "github.com/go-errors/errors"
+//  import "github.com/soul9/errors"
 //
-//  var Crashed = errors.Errorf("oh dear")
+//  var Crashed = errors.Newf("oh %s")
 //
-//  func Crash() error {
-//      return errors.New(Crashed)
+//  func Crash(s string) error {
+//      return Crashed(s)
 //  }
 //
 // This can be called as follows:
@@ -26,14 +34,15 @@
 //  import (
 //      "crashy"
 //      "fmt"
-//      "github.com/go-errors/errors"
+//      "github.com/soul9/errors"
 //  )
 //
 //  func main() {
-//      err := crashy.Crash()
+//      err := crashy.Crash("dear")
+//      err = errors.Add(err, crashy.Crash("my"))
 //      if err != nil {
-//          if errors.Is(err, crashy.Crashed) {
-//              fmt.Println(err.(*errors.Error).ErrorStack())
+//          if errors.Is(err, crashy.Crashed()) {
+//              fmt.Println(err)
 //          } else {
 //              panic(err)
 //          }
@@ -52,8 +61,18 @@ import (
 	"runtime"
 )
 
-// The maximum number of stackframes on any error.
-var MaxStackDepth = 50
+var (
+	// Unique identifier to make formatted errors comparable.
+	errid = 1
+	// The maximum number of stackframes on any error.
+	MaxStackDepth = 50
+)
+
+func newid() int {
+	r := errid
+	errid++
+	return r
+}
 
 // Error is an error with an attached stacktrace. It can be used
 // wherever the builtin error interface is expected.
@@ -62,13 +81,14 @@ type Error struct {
 	stack  []uintptr
 	frames []StackFrame
 	prefix string
+	id     int
 }
 
-// New makes an Error from the given value. If that value is already an
+// NewError makes an Error from the given value. If that value is already an
 // error then it will be used directly, if not, it will be passed to
 // fmt.Errorf("%v"). The stacktrace will point to the line of code that
 // called New.
-func New(e interface{}) *Error {
+func NewError(e interface{}) *Error {
 	var err error
 
 	switch e := e.(type) {
@@ -83,6 +103,7 @@ func New(e interface{}) *Error {
 	return &Error{
 		Err:   err,
 		stack: stack[:length],
+		id:    newid(),
 	}
 }
 
@@ -107,6 +128,7 @@ func Wrap(e interface{}, skip int) *Error {
 	return &Error{
 		Err:   err,
 		stack: stack[:length],
+		id:    newid(),
 	}
 }
 
@@ -132,19 +154,33 @@ func WrapPrefix(e interface{}, prefix string, skip int) *Error {
 
 // Is detects whether the error is equal to a given error. Errors
 // are considered equal by this function if they are the same object,
-// or if they both contain the same error inside an errors.Error.
+// or if they both contain the same error inside an errors.Error,
+// or if they have the same id inside an errors.Error,
+// or if one of the errors in an errors.Errors Is the same as the error.
 func Is(e error, original error) bool {
 
 	if e == original {
 		return true
 	}
 
-	if e, ok := e.(*Error); ok {
-		return Is(e.Err, original)
-	}
+	ee, eok := e.(*Error)
+	ooriginal, ook := original.(*Error)
 
-	if original, ok := original.(*Error); ok {
-		return Is(e, original.Err)
+	if eok {
+		if Is(ee.Err, original) {
+			return true
+		}
+	} else if ook {
+		if Is(e, ooriginal.Err) {
+			return true
+		}
+	}
+	if ook && eok && ee.id != 0 {
+		return ee.id == ooriginal.id
+	} else if errs, ok := e.(*Errors); ok {
+		return errs.Is(original)
+	} else if errs, ok := original.(*Errors); ok {
+		return errs.Is(e)
 	}
 
 	return false
@@ -206,4 +242,19 @@ func (err *Error) TypeName() string {
 		return "panic"
 	}
 	return reflect.TypeOf(err.Err).String()
+}
+
+// Newf with a format string returns a closure on top of Errorf that can be called with parameters to
+// provide helpful error messages, while retaining the ability to be compared.
+func Newf(s string) Errf {
+	id := newid()
+	return func(args ...interface{}) *Error {
+		e := Errorf(s, args...)
+		e.id = id
+		return e
+	}
+}
+
+func (e Errf) Error() string {
+	return e().Error()
 }

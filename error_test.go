@@ -55,21 +55,21 @@ func TestSkipWorks(t *testing.T) {
 	a()
 }
 
-func TestNew(t *testing.T) {
+func TestNewError(t *testing.T) {
 
-	err := New("foo")
-
-	if err.Error() != "foo" {
-		t.Errorf("Wrong message")
-	}
-
-	err = New(fmt.Errorf("foo"))
+	err := NewError("foo")
 
 	if err.Error() != "foo" {
 		t.Errorf("Wrong message")
 	}
 
-	bs := [][]byte{New("foo").Stack(), debug.Stack()}
+	err = NewError(fmt.Errorf("foo"))
+
+	if err.Error() != "foo" {
+		t.Errorf("Wrong message")
+	}
+
+	bs := [][]byte{NewError("foo").Stack(), debug.Stack()}
 
 	// Ignore the first line (as it contains the PC of the .Stack() call)
 	bs[0] = bytes.SplitN(bs[0], []byte("\n"), 2)[1]
@@ -96,12 +96,12 @@ func TestIs(t *testing.T) {
 		t.Errorf("io.EOF is not io.EOF")
 	}
 
-	if !Is(io.EOF, New(io.EOF)) {
-		t.Errorf("io.EOF is not New(io.EOF)")
+	if !Is(io.EOF, NewError(io.EOF)) {
+		t.Errorf("io.EOF is not newError(io.EOF)")
 	}
 
-	if !Is(New(io.EOF), New(io.EOF)) {
-		t.Errorf("New(io.EOF) is not New(io.EOF)")
+	if !Is(NewError(io.EOF), NewError(io.EOF)) {
+		t.Errorf("newError(io.EOF) is not newError(io.EOF)")
 	}
 
 	if Is(io.EOF, fmt.Errorf("io.EOF")) {
@@ -190,7 +190,7 @@ func ExampleIs(reader io.Reader, buff []byte) {
 
 func ExampleNew(UnexpectedEOF error) error {
 	// calling New attaches the current stacktrace to the existing UnexpectedEOF error
-	return New(UnexpectedEOF)
+	return NewError(UnexpectedEOF)
 }
 
 func ExampleWrap() error {
