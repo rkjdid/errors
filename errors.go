@@ -15,7 +15,7 @@ type Errors struct {
 type Errf func(...interface{}) *Error
 
 // Add returns a list of errors that contains both parameters, no matter their error type.
-func Add(e error, ee error) *Errors {
+func Add(e interface{}, ee interface{}) *Errors {
 	if errs, ok := e.(*Errors); ok {
 		return errs.Add(ee)
 	} else if err, ok := e.(*Error); ok {
@@ -31,8 +31,16 @@ func Add(e error, ee error) *Errors {
 // Add returns a list of errors with the parameter added to the receiver,
 // it will behave correctly with a simple error, as well as with an errors.Error and an errors.Errors as parameters.
 // It will also log the error using glog if a verbosity of 3 or more is specified.
-func (e *Errors) Add(err error) *Errors {
-	if err != nil {
+func (e *Errors) Add(ee interface{}) *Errors {
+	if ee != nil {
+		var err error
+
+		switch ee := ee.(type) {
+		case error:
+			err = ee
+		default:
+			err = fmt.Errorf("%v", ee)
+		}
 		if e == nil {
 			e = &Errors{errs: make([]*Error, 0)}
 		}
@@ -96,7 +104,7 @@ func (e *Errors) Is(ee error) bool {
 }
 
 // New returns a list of errors with the parameter added to the list.
-func New(err error) *Errors {
+func New(err interface{}) *Errors {
 	if err != nil {
 		e := &Errors{errs: make([]*Error, 0)}
 		return e.Add(err)
