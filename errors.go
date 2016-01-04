@@ -35,25 +35,21 @@ func (e *Errors) Add(ee interface{}) *Errors {
 	if ee != nil {
 		var err error
 
-		switch ee := ee.(type) {
-		case error:
-			err = ee
-		default:
-			err = fmt.Errorf("%v", ee)
-		}
 		if e == nil {
 			e = &Errors{errs: make([]*Error, 0)}
 		}
-
-		if ne, ok := err.(*Error); ok {
-			e.errs = append(e.errs, ne)
-		} else if errs, ok := err.(*Errors); ok {
-			for _, err := range errs.errs {
-				e = e.Add(err)
+		switch ee := ee.(type) {
+		case *Error:
+			err = ee
+			e.errs = append(e.errs, ee)
+		case *Errors:
+			err = ee
+			for _, err := range err.(*Errors).errs {
+				e.errs = append(e.errs, err)
 			}
-		} else {
-			ne = NewError(e)
-			e.errs = append(e.errs, ne)
+		default:
+			err = NewError(ee)
+			e.errs = append(e.errs, err.(*Error))
 		}
 		if glog.V(3) {
 			glog.Errorln(err)
@@ -67,14 +63,26 @@ func (e *Errors) Addf(fmts string, args ...interface{}) *Errors {
 	return e.Add(fmt.Errorf(fmts, args...))
 }
 
-// Error displays all the stack traces and error messages of the included errors.
+// ErrorStack returns all the stack traces and error messages of the included errors.
+func (e *Errors) ErrorStack() string {
+	if e == nil {
+		return ""
+	}
+	ret := make([]string, 0)
+	for i := range e.errs {
+		ret = append(ret, e.errs[i].ErrorStack())
+	}
+	return strings.Join(ret, "\n")
+}
+
+// Error returns all the error messages of the included errors.
 func (e *Errors) Error() string {
 	if e == nil {
 		return ""
 	}
 	ret := make([]string, 0)
-	for _, err := range e.errs {
-		ret = append(ret, err.ErrorStack())
+	for i := range e.errs {
+		ret = append(ret, e.errs[i].Error())
 	}
 	return strings.Join(ret, "\n")
 }
