@@ -54,6 +54,8 @@ func (e *Errors) Add(ee interface{}) *Errors {
 		if glog.V(3) {
 			glog.Errorln(err)
 		}
+	} else if e == nil {
+		return nil
 	}
 	return e
 }

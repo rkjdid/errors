@@ -19,6 +19,13 @@ func TestErrorsAdd(t *testing.T) {
 	if !Is(errs.errs[1], errs.errs[2]) {
 		t.Errorf("errs[%d] Is not %#v, it is %#v", 1, errs.errs[2], errs.errs[1])
 	}
+	errs = New(nil)
+	if errs != nil {
+		t.Error("errs should be nil, but it isn't")
+	}
+	if errs.Add(nil) != nil {
+		t.Error("errs.Add(nil) should be nil but it isn't")
+	}
 }
 
 func TestAdd(t *testing.T) {
