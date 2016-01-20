@@ -57,11 +57,14 @@ func TestAdd(t *testing.T) {
 
 func TestErrf(t *testing.T) {
 	bogusf1 := Newf("bogusf1 %d")
-	bogusf2 := Newf("bogusf1 %d")
+	bogusf2 := Newf("bogusf2 %d")
 	if !Is(bogusf1(1), bogusf1(2)) {
-		t.Errorf("bogusf1(1) is not bogusf1(2)")
+		t.Error("bogusf1(1) is not bogusf1(2)")
 	}
 	if Is(bogusf1(1), bogusf2(1)) {
-		t.Errorf("bogusf1(1) is bogusf2(1)")
+		t.Error("bogusf1(1) is bogusf2(1)")
+	}
+	if !Is(bogusf1(1), bogusf1) {
+		t.Error("bogusf1(1) is not bogusf1")
 	}
 }

@@ -158,11 +158,15 @@ func WrapPrefix(e interface{}, prefix string, skip int) *Error {
 // or if they have the same id inside an errors.Error,
 // or if one of the errors in an errors.Errors Is the same as the error.
 func Is(e error, original error) bool {
-
 	if e == original {
 		return true
 	}
-
+	if te, ok := e.(Errf); ok {
+		return Is(te(), original)
+	}
+	if te, ok := original.(Errf); ok {
+		return Is(e, te())
+	}
 	ee, eok := e.(*Error)
 	ooriginal, ook := original.(*Error)
 
