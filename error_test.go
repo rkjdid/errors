@@ -16,7 +16,7 @@ func TestStackFormatMatches(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		bs := [][]byte{Errorf("hi").Stack(), debug.Stack()}
+		bs := [][]byte{Errorf("hi").(*Error).Stack(), debug.Stack()}
 
 		// Ignore the first line (as it contains the PC of the .Stack() call)
 		bs[0] = bytes.SplitN(bs[0], []byte("\n"), 2)[1]
@@ -40,7 +40,7 @@ func TestSkipWorks(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		bs := [][]byte{Wrap("hi", 2).Stack(), debug.Stack()}
+		bs := [][]byte{Wrap("hi", 2).(*Error).Stack(), debug.Stack()}
 
 		// should skip four lines of debug.Stack()
 		bs[1] = bytes.SplitN(bs[1], []byte("\n"), 5)[4]
@@ -57,19 +57,19 @@ func TestSkipWorks(t *testing.T) {
 
 func TestNewError(t *testing.T) {
 
-	err := NewError("foo")
+	err := NewError("foo").(*Error)
 
 	if err.Error() != "foo" {
 		t.Errorf("Wrong message")
 	}
 
-	err = NewError(fmt.Errorf("foo"))
+	err = NewError(fmt.Errorf("foo")).(*Error)
 
 	if err.Error() != "foo" {
 		t.Errorf("Wrong message")
 	}
 
-	bs := [][]byte{NewError("foo").Stack(), debug.Stack()}
+	bs := [][]byte{NewError("foo").(*Error).Stack(), debug.Stack()}
 
 	// Ignore the first line (as it contains the PC of the .Stack() call)
 	bs[0] = bytes.SplitN(bs[0], []byte("\n"), 2)[1]
@@ -148,7 +148,7 @@ func TestWrapPrefixError(t *testing.T) {
 		t.Errorf("Constructor with an error failed")
 	}
 
-	prefixed := WrapPrefix(e, "prefix", 0)
+	prefixed := WrapPrefix(e, "prefix", 0).(*Error)
 	original := e.(*Error)
 
 	if prefixed.Err != original.Err || &prefixed.stack != &original.stack || &prefixed.frames != &original.frames || prefixed.Error() != "prefix: prefix: hi" {

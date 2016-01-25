@@ -12,26 +12,25 @@ type Errors struct {
 }
 
 // Errf is a closure around Errorf to provide comparable but descriptive errors
-type Errf func(...interface{}) *Error
+type Errf func(...interface{}) error
 
 // Add returns a list of errors that contains both parameters, no matter their error type.
-func Add(e interface{}, ee interface{}) *Errors {
+func Add(e interface{}, ee interface{}) error {
 	if errs, ok := e.(*Errors); ok {
 		return errs.Add(ee)
 	} else if err, ok := e.(*Error); ok {
 		errs := &Errors{errs: make([]*Error, 0)}
-		errs = errs.Add(err)
+		errs = errs.Add(err).(*Errors)
 		return errs.Add(ee)
 	} else {
-		errs := New(ee)
-		return errs.Add(ee)
+		return New(ee)
 	}
 }
 
 // Add returns a list of errors with the parameter added to the receiver,
 // it will behave correctly with a simple error, as well as with an errors.Error and an errors.Errors as parameters.
 // It will also log the error using glog if a verbosity of 3 or more is specified.
-func (e *Errors) Add(ee interface{}) *Errors {
+func (e *Errors) Add(ee interface{}) error {
 	if ee != nil {
 		var err error
 
@@ -61,7 +60,7 @@ func (e *Errors) Add(ee interface{}) *Errors {
 }
 
 // Addf is a wrapper around Add to simply add a descriptive error to the list.
-func (e *Errors) Addf(fmts string, args ...interface{}) *Errors {
+func (e *Errors) Addf(fmts string, args ...interface{}) error {
 	return e.Add(fmt.Errorf(fmts, args...))
 }
 
@@ -114,7 +113,7 @@ func (e *Errors) Is(ee error) bool {
 }
 
 // New returns a list of errors with the parameter added to the list.
-func New(err interface{}) *Errors {
+func New(err interface{}) error {
 	if err != nil {
 		e := &Errors{errs: make([]*Error, 0)}
 		return e.Add(err)
