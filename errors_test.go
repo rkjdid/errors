@@ -4,6 +4,21 @@ import (
 	"testing"
 )
 
+func TestErrorsNew(t *testing.T) {
+	if New(nil) != nil {
+		t.Error("New(nil) != nil")
+	}
+	if nilErr := New(nil); Add(nilErr, nil) != nil {
+		t.Error("nil.Add(nil) != nil")
+	}
+	f := func() error {
+		return New(nil)
+	}
+	if f() != nil {
+		t.Error("return New(nil) as error != nil")
+	}
+}
+
 func TestErrorsAdd(t *testing.T) {
 	bogus := NewError("bogus")
 	errs := New(bogus).(*Errors)
