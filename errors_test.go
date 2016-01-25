@@ -6,44 +6,40 @@ import (
 
 func TestErrorsAdd(t *testing.T) {
 	bogus := NewError("bogus")
-	errs := New(bogus)
+	errs := New(bogus).(*Errors)
 	if !Is(errs.errs[0], bogus) {
 		t.Errorf("errs[%d] Is not %#v, it is %#v", 0, bogus, errs.errs[0])
 	}
 	bogusf := Newf("%d")
-	errs = errs.Add(bogusf(1))
+	errs = errs.Add(bogusf(1)).(*Errors)
 	if !Is(errs.errs[1], bogusf()) {
 		t.Errorf("errs[%d] Is not %#v, it is %#v", 1, bogusf(), errs.errs[1])
 	}
-	errs = errs.Add(bogusf(2))
+	errs = errs.Add(bogusf(2)).(*Errors)
 	if !Is(errs.errs[1], errs.errs[2]) {
 		t.Errorf("errs[%d] Is not %#v, it is %#v", 1, errs.errs[2], errs.errs[1])
 	}
-	errs = New(nil)
-	if errs != nil {
-		t.Error("errs should be nil, but it isn't")
-	}
-	if errs.Add(nil) != nil {
-		t.Error("errs.Add(nil) should be nil but it isn't")
+	if New(nil) != nil {
+		t.Error("New(nil) should be nil, but it isn't")
 	}
 }
 
 func TestAdd(t *testing.T) {
 	bogusf := Newf("%d is bogus")
-	errs := New(bogusf(1))
-	errs = Add(errs, bogusf(2))
+	errs := New(bogusf(1)).(*Errors)
+	errs = Add(errs, bogusf(2)).(*Errors)
 	for i, e := range errs.errs {
 		if !Is(e, bogusf()) {
 			t.Errorf("errs[%d] Is not bogusf (%#v)", i, bogusf())
 		}
 	}
-	errs = Add(bogusf(1), bogusf(2))
+	errs = Add(bogusf(1), bogusf(2)).(*Errors)
 	for i, e := range errs.errs {
 		if !Is(e, bogusf()) {
 			t.Errorf("errs[%d] Is not bogusf (%#v)", i, bogusf())
 		}
 	}
-	errs = Add(errs, errs)
+	errs = Add(errs, errs).(*Errors)
 	if !Is(errs.errs[0], errs.errs[2]) {
 		t.Errorf("errs[0] Is not errs[2]")
 	}
@@ -52,6 +48,9 @@ func TestAdd(t *testing.T) {
 	}
 	if !Is(errs, bogusf()) {
 		t.Errorf("errs is not bogusf (%#v)", errs, bogusf)
+	}
+	if Add(nil, nil) != nil {
+		t.Errorf("Add(nil, nil) should be nil, but it isn't")
 	}
 }
 
