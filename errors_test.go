@@ -82,3 +82,44 @@ func TestErrf(t *testing.T) {
 		t.Error("bogusf1(1) is not bogusf1")
 	}
 }
+
+func TestErrorStacker(t *testing.T) {
+	var (
+		errorStacker ErrorStacker
+		err          *Error
+		errs         *Errors
+	)
+
+	err = Errorf("*Error").(*Error)
+	errorStacker = ErrorStacker(err)
+	if !errorStacker.Is(err) {
+		t.Error("!errorStacker.Is(err)")
+	}
+	stackString := errorStacker.ErrorStack()
+
+	errs = New(err).(*Errors)
+	errorStacker = ErrorStacker(errs)
+	if !errorStacker.Is(errs) {
+		t.Error("!errorStacker.Is(errs)")
+	}
+	if !errorStacker.Is(err) {
+		t.Error("!errorStacker.Is(err)")
+	}
+	if errorStacker.ErrorStack() != stackString {
+		t.Errorf(
+			"errorStacker.ErrorStack() != stackString\n  errorStacker.ErrorStack(): %s\n  stackString: %s",
+			errorStacker.ErrorStack(), stackString)
+	}
+
+	// from generic error interface to ErrorStack interface - cast required
+	var err1 error
+	var ok bool
+	err1 = err // type *Error, stored as error interface
+	if errorStacker, ok = err1.(ErrorStacker); !ok {
+		t.Error("err1 (interface error, underlying *Error type)")
+	}
+	err1 = errs // type *Errors, stored as error interface
+	if errorStacker, ok = err1.(ErrorStacker); !ok {
+		t.Error("err1 (interface error, underlying *Errors type)")
+	}
+}

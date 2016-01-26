@@ -190,6 +190,11 @@ func Is(e error, original error) bool {
 	return false
 }
 
+// Is satisfies the ErrorStacker interface, it is a wrapper to Is(error, error)
+func (e *Error) Is(original error) bool {
+	return Is(e, original)
+}
+
 // Errorf creates a new error with the given message. You can use it
 // as a drop-in replacement for fmt.Errorf() to provide descriptive
 // errors in return values.
@@ -221,7 +226,7 @@ func (err *Error) Stack() []byte {
 }
 
 // ErrorStack returns a string that contains both the
-// error message and the callstack.
+// error message and the callstack. Satisfies the ErrorStacker interface.
 func (err *Error) ErrorStack() string {
 	return err.TypeName() + " " + err.Error() + "\n" + string(err.Stack())
 }

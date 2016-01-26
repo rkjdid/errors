@@ -6,6 +6,15 @@ import (
 	"strings"
 )
 
+// ErrorStacker is an interface satisfying the error interface that is also
+// aware of the stackcall of the error, printed with ErrorStack(), and able
+// to compare itself to another error with Is(error)
+type ErrorStacker interface {
+	error
+	ErrorStack() string
+	Is(error) bool
+}
+
 // Errors is a list of errors with stack traces. It implements the error interface
 type Errors struct {
 	errs []*Error
@@ -65,6 +74,7 @@ func (e *Errors) Addf(fmts string, args ...interface{}) error {
 }
 
 // ErrorStack returns all the stack traces and error messages of the included errors.
+// Satisfies the ErrorStacker interface.
 func (e *Errors) ErrorStack() string {
 	if e == nil {
 		return ""
@@ -90,6 +100,7 @@ func (e *Errors) Error() string {
 
 // Is checks whether the parameter error is contained in the list of errors.
 // If the parameter is an errors.Errors, it will check whether at least one of their errors match.
+// Satisfies the ErrorStacker interface.
 func (e *Errors) Is(ee error) bool {
 	if e == nil && ee == nil {
 		return true
