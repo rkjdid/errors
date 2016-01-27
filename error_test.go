@@ -84,6 +84,10 @@ func TestNewError(t *testing.T) {
 	if err.ErrorStack() != err.TypeName()+" "+err.Error()+"\n"+string(err.Stack()) {
 		t.Errorf("ErrorStack is in the wrong format")
 	}
+
+	if NewError(nil) != nil {
+		t.Errorf("NewError(nil) != nil")
+	}
 }
 
 func TestIs(t *testing.T) {
