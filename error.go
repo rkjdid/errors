@@ -59,6 +59,7 @@ import (
 	"fmt"
 	"reflect"
 	"runtime"
+	"sync"
 )
 
 var (
@@ -66,11 +67,14 @@ var (
 	errid = 1
 	// The maximum number of stackframes on any error.
 	MaxStackDepth = 50
+	mutex         = &sync.RWMutex{}
 )
 
 func newid() int {
+	mutex.Lock()
 	r := errid
 	errid++
+	mutex.Unlock()
 	return r
 }
 
@@ -102,7 +106,9 @@ func NewError(e interface{}) error {
 		err = fmt.Errorf("%v", e)
 	}
 
+	mutex.RLock()
 	stack := make([]uintptr, MaxStackDepth)
+	mutex.RUnlock()
 	length := runtime.Callers(2, stack[:])
 	return &Error{
 		Err:   err,
@@ -127,7 +133,9 @@ func Wrap(e interface{}, skip int) error {
 		err = fmt.Errorf("%v", e)
 	}
 
+	mutex.RLock()
 	stack := make([]uintptr, MaxStackDepth)
+	mutex.RUnlock()
 	length := runtime.Callers(2+skip, stack[:])
 	return &Error{
 		Err:   err,
