@@ -96,25 +96,7 @@ func NewError(e interface{}) error {
 	if e == nil {
 		return nil
 	}
-
-	var err error
-
-	switch e := e.(type) {
-	case error:
-		err = e
-	default:
-		err = fmt.Errorf("%v", e)
-	}
-
-	mutex.RLock()
-	stack := make([]uintptr, MaxStackDepth)
-	mutex.RUnlock()
-	length := runtime.Callers(2, stack[:])
-	return &Error{
-		Err:   err,
-		stack: stack[:length],
-		id:    newid(),
-	}
+	return Wrap(e, 1)
 }
 
 // Wrap makes an Error from the given value. If that value is already an
