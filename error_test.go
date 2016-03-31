@@ -4,9 +4,22 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"runtime/debug"
+	"runtime"
 	"testing"
 )
+
+func getCallStack() []byte {
+	mutex.RLock()
+	st := make([]uintptr, MaxStackDepth)
+	mutex.RUnlock()
+	l := runtime.Callers(2, st[:])
+	buf := bytes.Buffer{}
+	for _, sp := range st[:l] {
+		fr := NewStackFrame(sp)
+		buf.WriteString(fr.String())
+	}
+	return buf.Bytes()
+}
 
 func TestStackFormatMatches(t *testing.T) {
 
@@ -16,7 +29,7 @@ func TestStackFormatMatches(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		bs := [][]byte{Errorf("hi").(*Error).Stack(), debug.Stack()}
+		bs := [][]byte{Errorf("hi").(*Error).Stack(), getCallStack()}
 
 		// Ignore the first line (as it contains the PC of the .Stack() call)
 		bs[0] = bytes.SplitN(bs[0], []byte("\n"), 2)[1]
@@ -40,7 +53,7 @@ func TestSkipWorks(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		bs := [][]byte{Wrap("hi", 2).(*Error).Stack(), debug.Stack()}
+		bs := [][]byte{Wrap("hi", 2).(*Error).Stack(), getCallStack()}
 
 		// should skip four lines of debug.Stack()
 		bs[1] = bytes.SplitN(bs[1], []byte("\n"), 5)[4]
@@ -69,7 +82,7 @@ func TestNewError(t *testing.T) {
 		t.Errorf("Wrong message")
 	}
 
-	bs := [][]byte{NewError("foo").(*Error).Stack(), debug.Stack()}
+	bs := [][]byte{NewError("foo").(*Error).Stack(), getCallStack()}
 
 	// Ignore the first line (as it contains the PC of the .Stack() call)
 	bs[0] = bytes.SplitN(bs[0], []byte("\n"), 2)[1]
