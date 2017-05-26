@@ -2,7 +2,6 @@ package errors
 
 import (
 	"fmt"
-	"github.com/golang/glog"
 	"strings"
 )
 
@@ -38,7 +37,6 @@ func Add(e interface{}, ee interface{}) error {
 
 // Add returns a list of errors with the parameter added to the receiver,
 // it will behave correctly with a simple error, as well as with an errors.Error and an errors.Errors as parameters.
-// It will also log the error using glog if a verbosity of 3 or more is specified.
 func (e *Errors) Add(ee interface{}) error {
 	if ee != nil {
 		var err error
@@ -58,9 +56,6 @@ func (e *Errors) Add(ee interface{}) error {
 		default:
 			err = NewError(ee)
 			e.errs = append(e.errs, err.(*Error))
-		}
-		if glog.V(3) {
-			glog.Errorln(err)
 		}
 	} else if e == nil {
 		return nil
